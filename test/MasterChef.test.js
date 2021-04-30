@@ -1,16 +1,16 @@
 const { expectRevert, time } = require('@openzeppelin/test-helpers');
-const CakeToken = artifacts.require('CakeToken');
-const SyrupBar = artifacts.require('SyrupBar');
+const KccsToken = artifacts.require('KccsToken');
+const SodaBar = artifacts.require('SodaBar');
 const MasterChef = artifacts.require('MasterChef');
-const MockBEP20 = artifacts.require('libs/MockBEP20');
+const MockKIP20 = artifacts.require('libs/MockKIP20');
 
 contract('MasterChef', ([alice, bob, carol, dev, minter]) => {
     beforeEach(async () => {
-        this.cake = await CakeToken.new({ from: minter });
-        this.syrup = await SyrupBar.new(this.cake.address, { from: minter });
-        this.lp1 = await MockBEP20.new('LPToken', 'LP1', '1000000', { from: minter });
-        this.lp2 = await MockBEP20.new('LPToken', 'LP2', '1000000', { from: minter });
-        this.lp3 = await MockBEP20.new('LPToken', 'LP3', '1000000', { from: minter });
+        this.cake = await KccsToken.new({ from: minter });
+        this.syrup = await SodaBar.new(this.cake.address, { from: minter });
+        this.lp1 = await MockKIP20.new('LPToken', 'LP1', '1000000', { from: minter });
+        this.lp2 = await MockKIP20.new('LPToken', 'LP2', '1000000', { from: minter });
+        this.lp3 = await MockKIP20.new('LPToken', 'LP3', '1000000', { from: minter });
         this.chef = await MasterChef.new(this.cake.address, this.syrup.address, dev, '1000', '100', { from: minter });
         await this.cake.transferOwnership(this.chef.address, { from: minter });
         await this.syrup.transferOwnership(this.chef.address, { from: minter });
@@ -24,12 +24,12 @@ contract('MasterChef', ([alice, bob, carol, dev, minter]) => {
         await this.lp3.transfer(alice, '2000', { from: minter });
     });
     it('real case', async () => {
-      this.lp4 = await MockBEP20.new('LPToken', 'LP1', '1000000', { from: minter });
-      this.lp5 = await MockBEP20.new('LPToken', 'LP2', '1000000', { from: minter });
-      this.lp6 = await MockBEP20.new('LPToken', 'LP3', '1000000', { from: minter });
-      this.lp7 = await MockBEP20.new('LPToken', 'LP1', '1000000', { from: minter });
-      this.lp8 = await MockBEP20.new('LPToken', 'LP2', '1000000', { from: minter });
-      this.lp9 = await MockBEP20.new('LPToken', 'LP3', '1000000', { from: minter });
+      this.lp4 = await MockKIP20.new('LPToken', 'LP1', '1000000', { from: minter });
+      this.lp5 = await MockKIP20.new('LPToken', 'LP2', '1000000', { from: minter });
+      this.lp6 = await MockKIP20.new('LPToken', 'LP3', '1000000', { from: minter });
+      this.lp7 = await MockKIP20.new('LPToken', 'LP1', '1000000', { from: minter });
+      this.lp8 = await MockKIP20.new('LPToken', 'LP2', '1000000', { from: minter });
+      this.lp9 = await MockKIP20.new('LPToken', 'LP3', '1000000', { from: minter });
       await this.chef.add('2000', this.lp1.address, true, { from: minter });
       await this.chef.add('1000', this.lp2.address, true, { from: minter });
       await this.chef.add('500', this.lp3.address, true, { from: minter });

@@ -1,21 +1,21 @@
 pragma solidity 0.6.12;
 
-import '@pancakeswap/pancake-swap-lib/contracts/math/SafeMath.sol';
-import '@pancakeswap/pancake-swap-lib/contracts/token/BEP20/IBEP20.sol';
-import '@pancakeswap/pancake-swap-lib/contracts/token/BEP20/SafeBEP20.sol';
-import '@pancakeswap/pancake-swap-lib/contracts/access/Ownable.sol';
+import 'kcc-swap-lib/contracts/math/SafeMath.sol';
+import 'kcc-swap-lib/contracts/token/KIP20/IKIP20.sol';
+import 'kcc-swap-lib/contracts/token/KIP20/SafeKIP20.sol';
+import 'kcc-swap-lib/contracts/access/Ownable.sol';
 
 // import "@nomiclabs/buidler/console.sol";
 
-interface IWBNB {
+interface IWKCS {
     function deposit() external payable;
     function transfer(address to, uint256 value) external returns (bool);
     function withdraw(uint256) external;
 }
 
-contract BnbStaking is Ownable {
+contract KcsStaking is Ownable {
     using SafeMath for uint256;
-    using SafeBEP20 for IBEP20;
+    using SafeKIP20 for IKIP20;
 
     // Info of each user.
     struct UserInfo {
@@ -26,36 +26,36 @@ contract BnbStaking is Ownable {
 
     // Info of each pool.
     struct PoolInfo {
-        IBEP20 lpToken;           // Address of LP token contract.
-        uint256 allocPoint;       // How many allocation points assigned to this pool. CAKEs to distribute per block.
-        uint256 lastRewardBlock;  // Last block number that CAKEs distribution occurs.
-        uint256 accCakePerShare; // Accumulated CAKEs per share, times 1e12. See below.
+        IKIP20 lpToken;           // Address of LP token contract.
+        uint256 allocPoint;       // How many allocation points assigned to this pool. KCCSs to distribute per block.
+        uint256 lastRewardBlock;  // Last block number that KCCSs distribution occurs.
+        uint256 accKccsPerShare; // Accumulated KCCSs per share, times 1e12. See below.
     }
 
     // The REWARD TOKEN
-    IBEP20 public rewardToken;
+    IKIP20 public rewardToken;
 
     // adminAddress
     address public adminAddress;
 
 
-    // WBNB
-    address public immutable WBNB;
+    // WKCS
+    address public immutable WKCS;
 
-    // CAKE tokens created per block.
+    // KCCS tokens created per block.
     uint256 public rewardPerBlock;
 
     // Info of each pool.
     PoolInfo[] public poolInfo;
     // Info of each user that stakes LP tokens.
     mapping (address => UserInfo) public userInfo;
-    // limit 10 BNB here
+    // limit 10 KCS here
     uint256 public limitAmount = 10000000000000000000;
     // Total allocation poitns. Must be the sum of all allocation points in all pools.
     uint256 public totalAllocPoint = 0;
-    // The block number when CAKE mining starts.
+    // The block number when KCCS mining starts.
     uint256 public startBlock;
-    // The block number when CAKE mining ends.
+    // The block number when KCCS mining ends.
     uint256 public bonusEndBlock;
 
     event Deposit(address indexed user, uint256 amount);
@@ -63,27 +63,27 @@ contract BnbStaking is Ownable {
     event EmergencyWithdraw(address indexed user, uint256 amount);
 
     constructor(
-        IBEP20 _lp,
-        IBEP20 _rewardToken,
+        IKIP20 _lp,
+        IKIP20 _rewardToken,
         uint256 _rewardPerBlock,
         uint256 _startBlock,
         uint256 _bonusEndBlock,
         address _adminAddress,
-        address _wbnb
+        address _wkcs
     ) public {
         rewardToken = _rewardToken;
         rewardPerBlock = _rewardPerBlock;
         startBlock = _startBlock;
         bonusEndBlock = _bonusEndBlock;
         adminAddress = _adminAddress;
-        WBNB = _wbnb;
+        WKCS = _wkcs;
 
         // staking pool
         poolInfo.push(PoolInfo({
             lpToken: _lp,
             allocPoint: 1000,
             lastRewardBlock: startBlock,
-            accCakePerShare: 0
+            accKccsPerShare: 0
         }));
 
         totalAllocPoint = 1000;
@@ -96,7 +96,7 @@ contract BnbStaking is Ownable {
     }
 
     receive() external payable {
-        assert(msg.sender == WBNB); // only accept BNB via fallback from the WBNB contract
+        assert(msg.sender == WKCS); // only accept KCS via fallback from the WKCS contract
     }
 
     // Update admin address by the previous dev.
@@ -132,14 +132,14 @@ contract BnbStaking is Ownable {
     function pendingReward(address _user) external view returns (uint256) {
         PoolInfo storage pool = poolInfo[0];
         UserInfo storage user = userInfo[_user];
-        uint256 accCakePerShare = pool.accCakePerShare;
+        uint256 accKccsPerShare = pool.accKccsPerShare;
         uint256 lpSupply = pool.lpToken.balanceOf(address(this));
         if (block.number > pool.lastRewardBlock && lpSupply != 0) {
             uint256 multiplier = getMultiplier(pool.lastRewardBlock, block.number);
-            uint256 cakeReward = multiplier.mul(rewardPerBlock).mul(pool.allocPoint).div(totalAllocPoint);
-            accCakePerShare = accCakePerShare.add(cakeReward.mul(1e12).div(lpSupply));
+            uint256 kccsReward = multiplier.mul(rewardPerBlock).mul(pool.allocPoint).div(totalAllocPoint);
+            accKccsPerShare = accKccsPerShare.add(kccsReward.mul(1e12).div(lpSupply));
         }
-        return user.amount.mul(accCakePerShare).div(1e12).sub(user.rewardDebt);
+        return user.amount.mul(accKccsPerShare).div(1e12).sub(user.rewardDebt);
     }
 
     // Update reward variables of the given pool to be up-to-date.
@@ -154,8 +154,8 @@ contract BnbStaking is Ownable {
             return;
         }
         uint256 multiplier = getMultiplier(pool.lastRewardBlock, block.number);
-        uint256 cakeReward = multiplier.mul(rewardPerBlock).mul(pool.allocPoint).div(totalAllocPoint);
-        pool.accCakePerShare = pool.accCakePerShare.add(cakeReward.mul(1e12).div(lpSupply));
+        uint256 kccsReward = multiplier.mul(rewardPerBlock).mul(pool.allocPoint).div(totalAllocPoint);
+        pool.accKccsPerShare = pool.accKccsPerShare.add(kccsReward.mul(1e12).div(lpSupply));
         pool.lastRewardBlock = block.number;
     }
 
@@ -178,22 +178,22 @@ contract BnbStaking is Ownable {
 
         updatePool(0);
         if (user.amount > 0) {
-            uint256 pending = user.amount.mul(pool.accCakePerShare).div(1e12).sub(user.rewardDebt);
+            uint256 pending = user.amount.mul(pool.accKccsPerShare).div(1e12).sub(user.rewardDebt);
             if(pending > 0) {
                 rewardToken.safeTransfer(address(msg.sender), pending);
             }
         }
         if(msg.value > 0) {
-            IWBNB(WBNB).deposit{value: msg.value}();
-            assert(IWBNB(WBNB).transfer(address(this), msg.value));
+            IWKCS(WKCS).deposit{value: msg.value}();
+            assert(IWKCS(WKCS).transfer(address(this), msg.value));
             user.amount = user.amount.add(msg.value);
         }
-        user.rewardDebt = user.amount.mul(pool.accCakePerShare).div(1e12);
+        user.rewardDebt = user.amount.mul(pool.accKccsPerShare).div(1e12);
 
         emit Deposit(msg.sender, msg.value);
     }
 
-    function safeTransferBNB(address to, uint256 value) internal {
+    function safeTransferKCS(address to, uint256 value) internal {
         (bool success, ) = to.call{gas: 23000, value: value}("");
         // (bool success,) = to.call{value:value}(new bytes(0));
         require(success, 'TransferHelper: ETH_TRANSFER_FAILED');
@@ -205,16 +205,16 @@ contract BnbStaking is Ownable {
         UserInfo storage user = userInfo[msg.sender];
         require(user.amount >= _amount, "withdraw: not good");
         updatePool(0);
-        uint256 pending = user.amount.mul(pool.accCakePerShare).div(1e12).sub(user.rewardDebt);
+        uint256 pending = user.amount.mul(pool.accKccsPerShare).div(1e12).sub(user.rewardDebt);
         if(pending > 0 && !user.inBlackList) {
             rewardToken.safeTransfer(address(msg.sender), pending);
         }
         if(_amount > 0) {
             user.amount = user.amount.sub(_amount);
-            IWBNB(WBNB).withdraw(_amount);
-            safeTransferBNB(address(msg.sender), _amount);
+            IWKCS(WKCS).withdraw(_amount);
+            safeTransferKCS(address(msg.sender), _amount);
         }
-        user.rewardDebt = user.amount.mul(pool.accCakePerShare).div(1e12);
+        user.rewardDebt = user.amount.mul(pool.accKccsPerShare).div(1e12);
 
         emit Withdraw(msg.sender, _amount);
     }
